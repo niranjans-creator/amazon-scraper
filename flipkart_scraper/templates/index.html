@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Flipkart Product Scraper</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f6f8;
+            color: #1f2937;
+        }
+
+        .header {
+            background: #2874f0;
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 30px;
+        }
+
+        .header p {
+            margin: 8px 0 0;
+            opacity: 0.9;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1100px;
+            margin: 35px auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+        }
+
+        .card h2 {
+            margin-top: 0;
+        }
+
+        .url-box {
+            display: flex;
+            gap: 12px;
+        }
+
+        .url-input {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .url-input:focus {
+            border-color: #2874f0;
+        }
+
+        .scrape-button {
+            border: none;
+            background: #2874f0;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .scrape-button:hover {
+            background: #1557c0;
+        }
+
+        .scrape-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .progress {
+            display: none;
+        }
+
+        .progress-item {
+            padding: 12px;
+            margin: 8px 0;
+            background: #f3f4f6;
+            border-radius: 6px;
+        }
+
+        .progress-item.active {
+            background: #e8f0fe;
+            color: #2874f0;
+        }
+
+        .progress-item.done {
+            background: #e8f7ee;
+            color: #15803d;
+        }
+
+        .product {
+            display: none;
+        }
+
+        .product-row {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 14px 0;
+            gap: 20px;
+        }
+
+        .product-label {
+            font-weight: bold;
+            color: #374151;
+        }
+
+        .product-value {
+            word-break: break-word;
+        }
+
+        .download-button {
+            display: inline-block;
+            margin-top: 20px;
+            background: #16a34a;
+            color: white;
+            text-decoration: none;
+            padding: 14px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .download-button:hover {
+            background: #15803d;
+        }
+
+        .error {
+            display: none;
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .success {
+            display: none;
+            background: #dcfce7;
+            color: #166534;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 700px) {
+
+            .url-box {
+                flex-direction: column;
+            }
+
+            .product-row {
+                grid-template-columns: 1fr;
+                gap: 5px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <div class="header">
+
+        <h1>Flipkart Product Scraper</h1>
+
+        <p>
+            Extract product information and export it to CSV
+        </p>
+
+    </div>
+
+
+    <div class="container">
+
+
+        <!-- URL INPUT -->
+
+        <div class="card">
+
+            <h2>Scrape a Product</h2>
+
+            <p>
+                Paste the Flipkart product URL below.
+            </p>
+
+            <div class="url-box">
+
+                <input
+                    id="urlInput"
+                    class="url-input"
+                    type="text"
+                    placeholder="https://www.flipkart.com/..."
+                >
+
+                <button
+                    id="scrapeButton"
+                    class="scrape-button"
+                    onclick="startScraping()"
+                >
+                    Start Scraping
+                </button>
+
+            </div>
+
+            <div
+                id="error"
+                class="error"
+            ></div>
+
+            <div
+                id="success"
+                class="success"
+            ></div>
+
+        </div>
+
+
+        <!-- PROGRESS -->
+
+        <div
+            id="progress"
+            class="card progress"
+        >
+
+            <h2>Scraping Progress</h2>
+
+            <div
+                id="step1"
+                class="progress-item"
+            >
+                ⏳ Opening Flipkart
+            </div>
+
+            <div
+                id="step2"
+                class="progress-item"
+            >
+                ⏳ Extracting product information
+            </div>
+
+            <div
+                id="step3"
+                class="progress-item"
+            >
+                ⏳ Extracting images
+            </div>
+
+            <div
+                id="step4"
+                class="progress-item"
+            >
+                ⏳ Extracting ingredients and nutrition
+            </div>
+
+            <div
+                id="step5"
+                class="progress-item"
+            >
+                ⏳ Saving CSV
+            </div>
+
+        </div>
+
+
+        <!-- PRODUCT RESULT -->
+
+        <div
+            id="productCard"
+            class="card product"
+        >
+
+            <h2>Scraped Product</h2>
+
+            <div class="product-row">
+
+                <div class="product-label">
+                    Title
+                </div>
+
+                <div
+                    id="title"
+                    class="product-value"
+                ></div>
+
+            </div>
+
+
+            <div class="product-row">
+
+                <div class="product-label">
+                    Description
+                </div>
+
+                <div
+                    id="description"
+                    class="product-value"
+                ></div>
+
+            </div>
+
+
+            <div class="product-row">
+
+                <div class="product-label">
+                    Weight
+                </div>
+
+                <div
+                    id="weight"
+                    class="product-value"
+                ></div>
+
+            </div>
+
+
+            <div class="product-row">
+
+                <div class="product-label">
+                    Category
+                </div>
+
+                <div
+                    id="category"
+                    class="product-value"
+                ></div>
+
+            </div>
+
+
+            <div class="product-row">
+
+                <div class="product-label">
+                    Price
+                </div>
+
+                <div
+                    id="price"
+                    class="product-value"
+                ></div>
+
+            </div>
+
+
+            <div class="product-row">
+
+                <div class="product-label">
+                    Ingredients
+                </div>
+
+                <div
+                    id="ingredients"
+                    class="product-value"
+                ></div>
+
+            </div>
+
+
+            <div class="product-row">
+
+                <div class="product-label">
+                    Nutritional Facts
+                </div>
+
+                <div
+                    id="nutritional_facts"
+                    class="product-value"
+                ></div>
+
+            </div>
+
+
+            <div class="product-row">
+
+                <div class="product-label">
+                    Images
+                </div>
+
+                <div
+                    id="image_url"
+                    class="product-value"
+                ></div>
+
+            </div>
+
+
+            <a
+                id="downloadButton"
+                class="download-button"
+                href="#"
+            >
+                Download CSV
+            </a>
+
+        </div>
+
+    </div>
+
+
+<script>
+
+async function startScraping() {
+
+    const urlInput = document.getElementById("urlInput");
+
+    const button = document.getElementById("scrapeButton");
+
+    const progress = document.getElementById("progress");
+
+    const productCard = document.getElementById("productCard");
+
+    const error = document.getElementById("error");
+
+    const success = document.getElementById("success");
+
+
+    const url = urlInput.value.trim();
+
+
+    // Reset interface
+
+    error.style.display = "none";
+
+    success.style.display = "none";
+
+    productCard.style.display = "none";
+
+
+    if (!url) {
+
+        error.textContent =
+            "Please enter a Flipkart product URL.";
+
+        error.style.display = "block";
+
+        return;
+
+    }
+
+
+    if (!url.toLowerCase().includes("flipkart.com")) {
+
+        error.textContent =
+            "Please enter a valid Flipkart URL.";
+
+        error.style.display = "block";
+
+        return;
+
+    }
+
+
+    button.disabled = true;
+
+    button.textContent = "Scraping...";
+
+
+    progress.style.display = "block";
+
+
+    setStep("step1", "active");
+
+    setStep("step2", "");
+
+    setStep("step3", "");
+
+    setStep("step4", "");
+
+    setStep("step5", "");
+
+
+    try {
+
+        // Start scraping request
+
+        const response = await fetch(
+            "/scrape",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    url: url
+                })
+            }
+        );
+
+
+        setStep("step1", "done");
+
+        setStep("step2", "active");
+
+
+        const data = await response.json();
+
+
+        if (!data.success) {
+
+            throw new Error(
+                data.error || "Scraping failed."
+            );
+
+        }
+
+
+        setStep("step2", "done");
+
+        setStep("step3", "done");
+
+        setStep("step4", "done");
+
+        setStep("step5", "active");
+
+
+        // Small delay so user can see progress
+
+        await sleep(500);
+
+
+        setStep("step5", "done");
+
+
+        displayProduct(data.product);
+
+
+        document.getElementById(
+            "downloadButton"
+        ).href =
+            "/download/" +
+            encodeURIComponent(data.filename);
+
+
+        success.textContent =
+            "Product scraped successfully! CSV saved in the scraped_products folder.";
+
+        success.style.display = "block";
+
+
+    } catch (err) {
+
+        console.error(err);
+
+        error.textContent =
+            err.message || "Something went wrong.";
+
+        error.style.display = "block";
+
+    }
+
+
+    button.disabled = false;
+
+    button.textContent = "Start Scraping";
+
+}
+
+
+function setStep(id, status) {
+
+    const element =
+        document.getElementById(id);
+
+    element.className =
+        "progress-item " + status;
+
+
+    if (status === "done") {
+
+        element.textContent =
+            element.textContent
+                .replace("⏳", "✓");
+
+    }
+
+}
+
+
+function sleep(ms) {
+
+    return new Promise(
+        resolve => setTimeout(resolve, ms)
+    );
+
+}
+
+
+function displayProduct(product) {
+
+    document.getElementById(
+        "productCard"
+    ).style.display = "block";
+
+
+    document.getElementById(
+        "title"
+    ).textContent =
+        product.title || "";
+
+
+    document.getElementById(
+        "description"
+    ).textContent =
+        product.description || "";
+
+
+    document.getElementById(
+        "weight"
+    ).textContent =
+        product.weight || "";
+
+
+    document.getElementById(
+        "category"
+    ).textContent =
+        product.category || "";
+
+
+    document.getElementById(
+        "price"
+    ).textContent =
+        product.price
+            ? "₹" + product.price
+            : "";
+
+
+    document.getElementById(
+        "ingredients"
+    ).textContent =
+        product.ingredients || "";
+
+
+    document.getElementById(
+        "nutritional_facts"
+    ).textContent =
+        product.nutritional_facts || "";
+
+
+    document.getElementById(
+        "image_url"
+    ).textContent =
+        formatImages(product.image_url);
+
+}
+
+
+function formatImages(images) {
+
+    if (!images) {
+        return "";
+    }
+
+    if (Array.isArray(images)) {
+        return images.join(" | ");
+    }
+
+    return images;
+
+}
+
+</script>
+
+</body>
+
+</html>
